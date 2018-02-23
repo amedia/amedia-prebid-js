@@ -75,7 +75,7 @@ function logToAdp(event, data) {
   window.postMessage({
     adpEventName: 'seshat-add',
     data: {
-      [event]: data,
+      [event]: [data],
     },
   }, '*');
 }
