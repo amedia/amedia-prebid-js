@@ -1,5 +1,5 @@
 /**
- * ga.js - analytics adapter for google analytics
+ * adploggerAnalyticsAdapter.js - analytics adapter for adplogger
  */
 
 var events = require('src/events');
@@ -25,11 +25,11 @@ exports.enableAnalytics = function ({ provider, options }) {
 
       if (eventObj.eventType === BID_REQUESTED) {
         bid = args;
-        sendBidRequestToGa(bid);
+        sendBidRequestToADP(bid);
       } else if (eventObj.eventType === BID_RESPONSE) {
         // bid is 2nd args
         bid = args;
-        sendBidResponseToGa(bid);
+        sendBidResponseToADP(bid);
       } else if (eventObj.eventType === BID_TIMEOUT) {
         const bidderArray = args;
         sendBidTimeouts(bidderArray);
@@ -37,11 +37,11 @@ exports.enableAnalytics = function ({ provider, options }) {
     });
 
     events.on(BID_REQUESTED, function (bidRequestObj) {
-      sendBidRequestToGa(bidRequestObj);
+      sendBidRequestToADP(bidRequestObj);
     });
 
     events.on(BID_RESPONSE, function (bid) {
-      sendBidResponseToGa(bid);
+      sendBidResponseToADP(bid);
     });
 
     events.on(BID_TIMEOUT, function (bidderArray) {
@@ -54,13 +54,13 @@ exports.enableAnalytics = function ({ provider, options }) {
   };
 };
 
-function sendBidRequestToGa(bid) {
+function sendBidRequestToADP(bid) {
   if (bid && bid.bidderCode) {
     logToAdp("a_prebid_bid_request", bid.bidderCode);
   }
 }
 
-function sendBidResponseToGa(bid) {
+function sendBidResponseToADP(bid) {
   if (bid && bid.bidderCode) {
 
       if (bid.cpm > 0) {
