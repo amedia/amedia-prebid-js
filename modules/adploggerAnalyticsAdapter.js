@@ -11,10 +11,10 @@ var BID_REQUESTED = CONSTANTS.EVENTS.BID_REQUESTED;
 var BID_TIMEOUT = CONSTANTS.EVENTS.BID_TIMEOUT;
 var BID_RESPONSE = CONSTANTS.EVENTS.BID_RESPONSE;
 
-exports.enableAnalytics = function ({ provider, options }) {
-    var initialized = false;
-    var storage = [];
+var ADP_INITIALIZED = false;
+var ADP_STORAGE = [];
 
+exports.enableAnalytics = function ({ provider, options }) {
     var existingEvents = events.getEvents();
 
     var bid = null;
@@ -74,7 +74,7 @@ function sendBidResponseToADP(bid) {
 
 function logToAdp(event, data) {
     utils.logMessage("Sending prebid event to adplogger [" + event + "][" + data + "]");
-    if (initialized) {
+    if (ADP_INITIALIZED) {
         window.postMessage({
             adpEventName: 'seshat-add',
             data: {
@@ -88,15 +88,15 @@ function logToAdp(event, data) {
                 [event]: [data],
             },
         };
-        storage.push(eventObject);
+        ADP_STORAGE.push(eventObject);
     }
 }
 
 var adpListener = window.addEventListener('seshat-alive', (evt) => {
-    initialized = true
+    ADP_INITIALIZED = true
 
     // Send unsent events.
-    for (var i = 0; i < storage.length; i += 1) {
+    for (var i = 0; i < ADP_STORAGE.length; i += 1) {
         window.postMessage(storage[i], '*');
     }
 
