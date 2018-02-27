@@ -82,13 +82,12 @@ function logToAdp(event, data) {
             },
         }, '*');
     } else {
-        eventObject = {
-            adpEventName: 'seshat-add',
-            data: {
-                [event]: [data],
-            },
-        };
-        ADP_STORAGE.push(eventObject);
+        ADP_STORAGE.push({
+          adpEventName: 'seshat-add',
+          data: {
+              [event]: [data],
+          },
+      });
     }
 }
 
