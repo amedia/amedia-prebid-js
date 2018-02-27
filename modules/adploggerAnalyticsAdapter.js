@@ -1,6 +1,6 @@
 /**
- * adploggerAnalyticsAdapter.js - analytics adapter for adplogger
- */
+* adploggerAnalyticsAdapter.js - analytics adapter for adplogger
+*/
 
 var events = require('src/events');
 var utils = require('src/utils');
@@ -12,81 +12,109 @@ var BID_TIMEOUT = CONSTANTS.EVENTS.BID_TIMEOUT;
 var BID_RESPONSE = CONSTANTS.EVENTS.BID_RESPONSE;
 
 exports.enableAnalytics = function ({ provider, options }) {
+    var initialized = false;
+    var storage = [];
 
     var existingEvents = events.getEvents();
 
     var bid = null;
 
     utils._each(existingEvents, function (eventObj) {
-      if (typeof eventObj !== 'object') {
-        return;
-      }
-      var args = eventObj.args;
+        if (typeof eventObj !== 'object') {
+            return;
+        }
+        var args = eventObj.args;
 
-      if (eventObj.eventType === BID_REQUESTED) {
-        bid = args;
-        sendBidRequestToADP(bid);
-      } else if (eventObj.eventType === BID_RESPONSE) {
-        // bid is 2nd args
-        bid = args;
-        sendBidResponseToADP(bid);
-      } else if (eventObj.eventType === BID_TIMEOUT) {
-        const bidderArray = args;
-        sendBidTimeouts(bidderArray);
-      }
+        if (eventObj.eventType === BID_REQUESTED) {
+            bid = args;
+            sendBidRequestToADP(bid);
+        } else if (eventObj.eventType === BID_RESPONSE) {
+            // bid is 2nd args
+            bid = args;
+            sendBidResponseToADP(bid);
+        } else if (eventObj.eventType === BID_TIMEOUT) {
+            const bidderArray = args;
+            sendBidTimeouts(bidderArray);
+        }
     });
 
     events.on(BID_REQUESTED, function (bidRequestObj) {
-      sendBidRequestToADP(bidRequestObj);
+        sendBidRequestToADP(bidRequestObj);
     });
 
     events.on(BID_RESPONSE, function (bid) {
-      sendBidResponseToADP(bid);
+        sendBidResponseToADP(bid);
     });
 
     events.on(BID_TIMEOUT, function (bidderArray) {
-      sendBidTimeouts(bidderArray);
+        sendBidTimeouts(bidderArray);
     });
 
-  // finally set this function to return log message, prevents multiple adapter listeners
-  this.enableAnalytics = function _enable() {
-    return utils.logMessage(`Analytics adapter already enabled, unnecessary call to \`enableAnalytics\`.`);
-  };
+    // finally set this function to return log message, prevents multiple adapter listeners
+    this.enableAnalytics = function _enable() {
+        return utils.logMessage(`Analytics adapter already enabled, unnecessary call to \`enableAnalytics\`.`);
+    };
 };
 
 function sendBidRequestToADP(bid) {
-  if (bid && bid.bidderCode) {
-    logToAdp("a_prebid_bid_request", bid.bidderCode);
-  }
+    if (bid && bid.bidderCode) {
+        logToAdp("a_prebid_bid_request", bid.bidderCode);
+    }
 }
 
 function sendBidResponseToADP(bid) {
-  if (bid && bid.bidderCode) {
+    if (bid && bid.bidderCode) {
 
-      if (bid.cpm > 0) {
-        logToAdp("a_prebid_bid", [bid.cpm, bid.bidderCode, bid.adUnitCode]);
-        logToAdp("a_prebid_bid_load_time", [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
-      }
-  }
+        if (bid.cpm > 0) {
+            logToAdp("a_prebid_bid", [bid.cpm, bid.bidderCode, bid.adUnitCode]);
+            logToAdp("a_prebid_bid_load_time", [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
+        }
+    }
 }
 
 function logToAdp(event, data) {
-  utils.logMessage("Sending prebid event to adplogger [" + event + "][" + data + "]");
-  window.postMessage({
-    adpEventName: 'seshat-add',
-    data: {
-      [event]: [data],
-    },
-  }, '*');
+    utils.logMessage("Sending prebid event to adplogger [" + event + "][" + data + "]");
+    if (initialized) {
+        window.postMessage({
+            adpEventName: 'seshat-add',
+            data: {
+                [event]: [data],
+            },
+        }, '*');
+    } else {
+        eventObject = {
+            adpEventName: 'seshat-add',
+            data: {
+                [event]: [data],
+            },
+        };
+        storage.push(eventObject);
+    }
 }
 
+var adpListener = window.addEventListener('seshat-alive', (evt) => {
+    initialized = true
+
+    // Send unsent events.
+    for (var i = 0; i < storage.length; i += 1) {
+        window.postMessage(storage[i], '*');
+    }
+
+    // Clean up
+    window.removeEventListener(adpListener);
+});
+
+window.postMessage({
+    adpEventName: 'seshat-ping'
+}, '*');
+
 function sendBidTimeouts(timedOutBidders) {
-  utils._each(timedOutBidders, function (bidderCode) {
-    logToAdp("a_prebid_timeout", bidderCode);
-  });
+    utils._each(timedOutBidders, function (bidderCode) {
+        logToAdp("a_prebid_timeout", bidderCode);
+    });
 }
 
 adaptermanager.registerAnalyticsAdapter({
-  adapter: exports,
-  code: 'adplogger'
+    adapter: exports,
+    code: 'adplogger'
 });
