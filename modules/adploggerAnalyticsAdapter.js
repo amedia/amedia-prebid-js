@@ -97,7 +97,7 @@ var adpListener = window.addEventListener('seshat-alive', (evt) => {
 
     // Send unsent events.
     for (var i = 0; i < ADP_STORAGE.length; i += 1) {
-        window.postMessage(storage[i], '*');
+        window.postMessage(ADP_STORAGE[i], '*');
     }
 
     // Clean up
