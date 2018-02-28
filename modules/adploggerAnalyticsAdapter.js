@@ -100,6 +100,7 @@ var adpListener = window.addEventListener('seshat-alive', (evt) => {
 
   // Clean up
   window.removeEventListener('seshat-alive', adpListener);
+  ADP_STORAGE = [];
 });
 
 window.postMessage({
