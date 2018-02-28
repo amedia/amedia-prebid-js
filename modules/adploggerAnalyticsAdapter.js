@@ -64,10 +64,8 @@ function sendBidRequestToADP(bid) {
 
 function sendBidResponseToADP(bid) {
   if (bid && bid.bidderCode) {
-    if (bid.cpm > 0) {
       logToAdp('a_prebid_bid', [bid.cpm, bid.bidderCode, bid.adUnitCode]);
       logToAdp('a_prebid_bid_load_time', [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
-    }
   }
 }
 
