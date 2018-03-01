@@ -89,7 +89,7 @@ function logToAdp(event, data) {
 }
 
 var adpListener = window.addEventListener('seshat-alive', (evt) => {
-  ADP_INITIALIZED = true
+  ADP_INITIALIZED = true;
 
   // Send unsent events.
   for (var i = 0; i < ADP_STORAGE.length; i += 1) {
