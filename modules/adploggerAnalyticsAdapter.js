@@ -10,6 +10,7 @@ var adaptermanager = require('src/adaptermanager');
 var BID_REQUESTED = CONSTANTS.EVENTS.BID_REQUESTED;
 var BID_TIMEOUT = CONSTANTS.EVENTS.BID_TIMEOUT;
 var BID_RESPONSE = CONSTANTS.EVENTS.BID_RESPONSE;
+var BID_WON = CONSTANTS.EVENTS.BID_WON;
 
 var ADP_INITIALIZED = false;
 var ADP_STORAGE = [];
@@ -35,6 +36,9 @@ exports.enableAnalytics = function ({ provider, options }) {
     } else if (eventObj.eventType === BID_TIMEOUT) {
       const bidderArray = args;
       sendBidTimeouts(bidderArray);
+    } else if (eventObj.eventType === BID_WON) {
+      bid = args;
+      sendBidWonToGa(bid);
     }
   });
 
@@ -48,6 +52,11 @@ exports.enableAnalytics = function ({ provider, options }) {
 
   events.on(BID_TIMEOUT, function (bidderArray) {
     sendBidTimeouts(bidderArray);
+  });
+
+  // wins
+  events.on(BID_WON, function (bid) {
+    sendBidWonToGa(bid);
   });
 
   // finally set this function to return log message, prevents multiple adapter listeners
@@ -64,9 +73,13 @@ function sendBidRequestToADP(bid) {
 
 function sendBidResponseToADP(bid) {
   if (bid && bid.bidderCode) {
-      logToAdp('a_prebid_bid', [bid.cpm, bid.bidderCode, bid.adUnitCode]);
-      logToAdp('a_prebid_bid_load_time', [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
+    logToAdp('a_prebid_bid', [bid.cpm, bid.bidderCode, bid.adUnitCode]);
+    logToAdp('a_prebid_bid_load_time', [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
   }
+}
+
+function sendBidWonToGa(bid) {
+  logToAdp('a_prebid_win', [bid.cpm, bid.bidderCode, bid.adUnitCode]);
 }
 
 function logToAdp(event, data) {
@@ -107,7 +120,7 @@ window.postMessage({
 
 function sendBidTimeouts(timedOutBidders) {
   utils._each(timedOutBidders, function (bidderCode) {
-    logToAdp('a_prebid_timeout', bidderCode);
+    logToAdp('a_prebid_timeout', [bidderCode.bidder, bidderCode.adUnitCode] );
   });
 }
 
