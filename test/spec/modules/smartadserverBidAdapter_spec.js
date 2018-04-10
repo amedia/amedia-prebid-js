@@ -5,9 +5,6 @@ import {
   spec
 } from 'modules/smartadserverBidAdapter';
 import {
-  getTopWindowLocation
-} from 'src/utils';
-import {
   newBidder
 } from 'src/adapters/bidderFactory';
 import {
@@ -15,7 +12,7 @@ import {
 } from 'src/config';
 import * as utils from 'src/utils';
 
-describe('Smart ad server bid adapter tests', () => {
+describe('Smart bid adapter tests', () => {
   var DEFAULT_PARAMS = [{
     adUnitCode: 'sas_42',
     bidId: 'abcd1234',
@@ -63,7 +60,8 @@ describe('Smart ad server bid adapter tests', () => {
       isNetCpm: true,
       ttl: 300,
       adUrl: 'http://awesome.fake.url',
-      ad: '< --- awesome script --- >'
+      ad: '< --- awesome script --- >',
+      cSyncUrl: 'http://awesome.fake.csync.url'
     }
   };
 
@@ -74,9 +72,9 @@ describe('Smart ad server bid adapter tests', () => {
       }
     });
     const request = spec.buildRequests(DEFAULT_PARAMS);
-    expect(request).to.have.property('url').and.to.equal('http://prg.smartadserver.com/prebid/v1');
-    expect(request).to.have.property('method').and.to.equal('POST');
-    const requestContent = JSON.parse(request.data);
+    expect(request[0]).to.have.property('url').and.to.equal('http://prg.smartadserver.com/prebid/v1');
+    expect(request[0]).to.have.property('method').and.to.equal('POST');
+    const requestContent = JSON.parse(request[0].data);
     expect(requestContent).to.have.property('siteid').and.to.equal('1234');
     expect(requestContent).to.have.property('pageid').and.to.equal('5678');
     expect(requestContent).to.have.property('formatid').and.to.equal('90');
@@ -95,7 +93,7 @@ describe('Smart ad server bid adapter tests', () => {
 
   it('Verify parse response', () => {
     const request = spec.buildRequests(DEFAULT_PARAMS);
-    const bids = spec.interpretResponse(BID_RESPONSE, request);
+    const bids = spec.interpretResponse(BID_RESPONSE, request[0]);
     expect(bids).to.have.lengthOf(1);
     const bid = bids[0];
     expect(bid.cpm).to.equal(12);
@@ -109,6 +107,8 @@ describe('Smart ad server bid adapter tests', () => {
     expect(bid.ttl).to.equal(300);
     expect(bid.requestId).to.equal(DEFAULT_PARAMS[0].bidId);
     expect(bid.referrer).to.equal(utils.getTopWindowUrl());
+
+    expect(function() { spec.interpretResponse(BID_RESPONSE, {data: 'invalid Json'}) }).to.not.throw();
   });
 
   it('Verifies bidder code', () => {
@@ -151,7 +151,16 @@ describe('Smart ad server bid adapter tests', () => {
     })).to.equal(false);
   });
 
-  it('Verifies sync options', () => {
-    expect(spec.getUserSyncs).to.be.undefined;
+  it('Verifies user sync', () => {
+    var syncs = spec.getUserSyncs({iframeEnabled: true}, [BID_RESPONSE]);
+    expect(syncs).to.have.lengthOf(1);
+    expect(syncs[0].type).to.equal('iframe');
+    expect(syncs[0].url).to.equal('http://awesome.fake.csync.url');
+
+    syncs = spec.getUserSyncs({iframeEnabled: false}, [BID_RESPONSE]);
+    expect(syncs).to.have.lengthOf(0);
+
+    syncs = spec.getUserSyncs({iframeEnabled: true}, []);
+    expect(syncs).to.have.lengthOf(0);
   });
 });
