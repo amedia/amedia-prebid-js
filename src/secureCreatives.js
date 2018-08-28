@@ -10,6 +10,8 @@ import { isSlotMatchingAdUnitCode } from './utils';
 import { auctionManager } from './auctionManager';
 import find from 'core-js/library/fn/array/find';
 
+var utils = require('src/utils');
+
 const BID_WON = EVENTS.BID_WON;
 
 export function listenMessagesFromCreative() {
@@ -56,6 +58,8 @@ function sendAdToCreative(adObject, remoteDomain, source) {
   const { adId, ad, adUrl, width, height } = adObject;
 
   if (adId) {
+    utils.logMessage('Sending Prebid Response to adId: ' + adId + ' ad: ' + ad + ' adUrl: ' + adUrl + ' width: ' + width + ' height: ' + height);
+
     resizeRemoteCreative(adObject);
     source.postMessage(JSON.stringify({
       message: 'Prebid Response',
