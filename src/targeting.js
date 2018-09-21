@@ -142,11 +142,37 @@ export function newTargeting(auctionManager) {
    * @param {Object.<string,Object.<string,string>>} targetingConfig
    */
   targeting.setTargetingForGPT = function(targetingConfig) {
+    utils.logInfo('targetingConfig', targetingConfig);
+    var totalTargetingLength = 0;
+    let filteredTargetingConfig = {};
+    Object.keys(targetingConfig).sort((key1, key2) => {
+      return key1.split('-')[2] - key2.split('-')[2];
+    }).forEach(targetId => {
+        let lengthAdunitTargeting = 0;
+
+        Object.keys(targetingConfig[targetId]).forEach(key => {
+          let valueArr = targetingConfig[targetId][key].split(',');
+          valueArr = (valueArr.length > 1) ? [valueArr] : valueArr;
+          valueArr.forEach(value => {
+            lengthAdunitTargeting = lengthAdunitTargeting + key.length + value.length;
+            return value;
+          });
+        });
+        if (totalTargetingLength + lengthAdunitTargeting < 3000) {
+          totalTargetingLength = totalTargetingLength + lengthAdunitTargeting;
+          filteredTargetingConfig[targetId] = targetingConfig[targetId];
+        } else {
+          utils.logInfo('Targeting exceeds 3000 characters, skipping adunit', targetId);
+        }
+      }
+    );
+
+    utils.logInfo('filteredTargetingConfig', filteredTargetingConfig);
     window.googletag.pubads().getSlots().forEach(slot => {
-      Object.keys(targetingConfig).filter(isAdUnitCodeMatchingSlot(slot))
+      Object.keys(filteredTargetingConfig).filter(isAdUnitCodeMatchingSlot(slot))
         .forEach(targetId =>
-          Object.keys(targetingConfig[targetId]).forEach(key => {
-            let valueArr = targetingConfig[targetId][key].split(',');
+          Object.keys(filteredTargetingConfig[targetId]).forEach(key => {
+            let valueArr = filteredTargetingConfig[targetId][key].split(',');
             valueArr = (valueArr.length > 1) ? [valueArr] : valueArr;
             valueArr.map((value) => {
               utils.logMessage(`Attempting to set key value for slot: ${slot.getSlotElementId()} key: ${key} value: ${value}`);
@@ -157,6 +183,7 @@ export function newTargeting(auctionManager) {
           })
         )
     })
+    utils.logMessage(`Total targeting length is: ${totalTargetingLength}`);
   };
 
   /**
