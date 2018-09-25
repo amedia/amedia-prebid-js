@@ -2,6 +2,7 @@ import * as utils from 'src/utils'
 
 import { config } from 'src/config'
 import { registerBidder } from 'src/adapters/bidderFactory'
+import includes from 'core-js/library/fn/array/includes';
 
 const BIDDER_CODE = 'gumgum'
 const ALIAS_BIDDER_CODE = ['gg']
@@ -11,6 +12,76 @@ const TIME_TO_LIVE = 60
 
 let browserParams = {};
 let pageViewId = null
+
+function hasTopAccess () {
+  var hasTopAccess = false
+  try { hasTopAccess = !!top.document } catch (e) {}
+  return hasTopAccess
+}
+
+function isInSafeFrame (windowRef) {
+  const w = windowRef || window
+  if (w.$sf) return w.$sf
+  else if (hasTopAccess() && w !== top) return isInSafeFrame(w.parent)
+  return null
+}
+
+function getGoogleTag (windowRef) {
+  try {
+    const w = windowRef || window
+    var GOOGLETAG = null
+    if ('googletag' in w) {
+      GOOGLETAG = w.googletag
+    } else if (w !== top) {
+      GOOGLETAG = getGoogleTag(w.parent)
+    }
+    return GOOGLETAG
+  } catch (error) {
+    utils.logError('Error getting googletag ', error)
+    return null
+  }
+}
+
+function getAMPContext (windowRef) {
+  const w = windowRef || window
+  var context = null
+  var nameJSON = null
+  if (utils.isPlainObject(w.context)) {
+    context = w.context
+  } else {
+    try {
+      nameJSON = JSON.parse(w.name || null)
+    } catch (error) {
+      utils.logError('Error getting w.name', error)
+    }
+    if (utils.isPlainObject(nameJSON)) {
+      context = nameJSON._context || (nameJSON.attributes ? nameJSON.attributes._context : null)
+    }
+    if (utils.isPlainObject(w.AMP_CONTEXT_DATA)) {
+      context = w.AMP_CONTEXT_DATA
+    }
+  }
+  return context
+}
+
+function getJCSI () {
+  const entrypointOffset = 7
+  const inFrame = (window.top && window.top !== window)
+  const frameType = (!inFrame ? 1 : (isInSafeFrame() ? 2 : (hasTopAccess() ? 3 : 4)))
+  const context = []
+  if (getAMPContext()) {
+    context.push(1)
+  }
+  if (getGoogleTag()) {
+    context.push(2)
+  }
+  const jcsi = {
+    ep: entrypointOffset,
+    fc: frameType,
+    ctx: context
+  }
+  return JSON.stringify(jcsi)
+}
 
 // TODO: potential 0 values for browserParams sent to ad server
 function _getBrowserParams() {
@@ -39,7 +110,8 @@ function _getBrowserParams() {
     sh: topScreen.height,
     pu: topUrl,
     ce: utils.cookiesAreEnabled(),
-    dpr: topWindow.devicePixelRatio || 1
+    dpr: topWindow.devicePixelRatio || 1,
+    jcsi: getJCSI()
   }
   ggad = (topUrl.match(/#ggad=(\w+)$/) || [0, 0])[1]
   if (ggad) {
@@ -174,8 +246,17 @@ function interpretResponse (serverResponse, bidRequest) {
       pvid
     }
   } = Object.assign(defaultResponse, serverResponseBody)
-  let isTestUnit = (bidRequest.data && bidRequest.data.pi === 3 && bidRequest.data.si === 9)
-  let [width, height] = utils.parseSizesInput(bidRequest.sizes)[0].split('x')
+  let data = bidRequest.data || {}
+  let product = data.pi
+  let isTestUnit = (product === 3 && data.si === 9)
+  let sizes = utils.parseSizesInput(bidRequest.sizes)
+  let [width, height] = sizes[0].split('x')
+
+  // return 1x1 when breakout expected
+  if ((product === 2 || product === 5) && includes(sizes, '1x1')) {
+    width = '1'
+    height = '1'
+  }
 
   // update Page View ID from server response
   pageViewId = pvid
