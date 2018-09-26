@@ -587,39 +587,39 @@ export function hasVideoMediaType(bidRequest) {
  */
 function bidType(bid, log = false) {
   let validVideo;
-  if (hasVideoMediaType(bid)) {
-    validVideo = true;
-
-    if (utils.deepAccess(bid, `mediaTypes.${VIDEO}.context`) === 'instream' || bid.mediaType === VIDEO) {
-      if (typeof utils.deepAccess(bid, 'params.video.size_id') === 'undefined') {
-        if (log) {
-          utils.logError('Rubicon bid adapter Error: size id is missing for instream video request.');
-        }
-        validVideo = false;
-      }
-    } else if (utils.deepAccess(bid, `mediaTypes.${VIDEO}.context`) === 'outstream') {
-      if (utils.deepAccess(bid, 'params.video.size_id') !== 203) {
-        if (log) {
-          utils.logWarn('Rubicon bid adapter Warning: outstream video is sending invalid size id, converting size id to 203.');
-        }
-      }
-    } else {
-      if (log) {
-        utils.logError('Rubicon bid adapter Error: no instream or outstream context defined in mediaTypes.');
-      }
-      validVideo = false;
-    }
-    if (validVideo) {
-      if (typeof utils.deepAccess(bid, `mediaTypes.${BANNER}`) !== 'undefined') {
-        if (log) {
-          utils.logWarn('Rubicon bid adapter Warning: video and banner requested for same adUnit, continuing with video request, multi-format request is not supported by rubicon yet.');
-        }
-      }
-      return 'video';
-    } else if (typeof utils.deepAccess(bid, `mediaTypes.${BANNER}`) === 'undefined') {
-      return undefined;
-    }
-  }
+  // if (hasVideoMediaType(bid)) {
+  //   validVideo = true;
+  //
+  //   if (utils.deepAccess(bid, `mediaTypes.${VIDEO}.context`) === 'instream' || bid.mediaType === VIDEO) {
+  //     if (typeof utils.deepAccess(bid, 'params.video.size_id') === 'undefined') {
+  //       if (log) {
+  //         utils.logError('Rubicon bid adapter Error: size id is missing for instream video request.');
+  //       }
+  //       validVideo = false;
+  //     }
+  //   } else if (utils.deepAccess(bid, `mediaTypes.${VIDEO}.context`) === 'outstream') {
+  //     if (utils.deepAccess(bid, 'params.video.size_id') !== 203) {
+  //       if (log) {
+  //         utils.logWarn('Rubicon bid adapter Warning: outstream video is sending invalid size id, converting size id to 203.');
+  //       }
+  //     }
+  //   } else {
+  //     if (log) {
+  //       utils.logError('Rubicon bid adapter Error: no instream or outstream context defined in mediaTypes.');
+  //     }
+  //     validVideo = false;
+  //   }
+  //   if (validVideo) {
+  //     if (typeof utils.deepAccess(bid, `mediaTypes.${BANNER}`) !== 'undefined') {
+  //       if (log) {
+  //         utils.logWarn('Rubicon bid adapter Warning: video and banner requested for same adUnit, continuing with video request, multi-format request is not supported by rubicon yet.');
+  //       }
+  //     }
+  //     return 'video';
+  //   } else if (typeof utils.deepAccess(bid, `mediaTypes.${BANNER}`) === 'undefined') {
+  //     return undefined;
+  //   }
+  // }
   if (parseSizes(bid).length > 0) {
     if (log && validVideo === false) {
       utils.logWarn('Rubicon bid adapter Warning: invalid video requested for adUnit, continuing with banner request.');
