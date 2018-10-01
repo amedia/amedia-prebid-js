@@ -74,6 +74,8 @@ function sendBidRequestToADP(bid) {
 function sendBidResponseToADP(bid) {
   if (bid && bid.bidderCode) {
     logToAdp('a_prebid_bid', [bid.cpm, bid.bidderCode, bid.adUnitCode]);
+    logToAdp('a_prebid_bid_type', [bid.mediaType, bid.bidderCode, bid.adUnitCode]);
+    logToAdp('a_prebid_bid_size', [bid.size, bid.bidderCode, bid.adUnitCode]);
     logToAdp('a_prebid_bid_load_time', [bid.timeToRespond, bid.bidderCode, bid.adUnitCode]);
   }
 }
