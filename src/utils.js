@@ -6,7 +6,6 @@ import { parse } from './url';
 const CONSTANTS = require('./constants');
 
 var _loggingChecked = false;
-var _consoleDecorationChecked = false;
 
 var tArr = 'Array';
 var tStr = 'String';
@@ -67,9 +66,21 @@ exports.getUniqueIdentifierStr = _getUniqueIdentifierStr;
  */
 exports.generateUUID = function generateUUID(placeholder) {
   return placeholder
-    ? (placeholder ^ Math.random() * 16 >> placeholder / 4).toString(16)
+    ? (placeholder ^ _getRandomData() >> placeholder / 4).toString(16)
     : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, generateUUID);
 };
+
+/**
+ * Returns random data using the Crypto API if available and Math.random if not
+ * Method is from https://gist.github.com/jed/982883 like generateUUID, direct link https://gist.github.com/jed/982883#gistcomment-45104
+ */
+function _getRandomData() {
+  if (window && window.crypto && window.crypto.getRandomValues) {
+    return crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+  } else {
+    return Math.random() * 16;
+  }
+}
 
 exports.getBidIdParameter = function (key, paramsObj) {
   if (paramsObj && paramsObj[key]) {
@@ -191,7 +202,7 @@ export function parseGPTSingleSizeArray(singleSize) {
 };
 
 /**
- * @deprecated This function will be removed soon
+ * @deprecated This function will be removed soon. Use http://prebid.org/dev-docs/bidder-adaptor.html#referrers
  */
 exports.getTopWindowLocation = function() {
   if (exports.inIframe()) {
@@ -207,7 +218,7 @@ exports.getTopWindowLocation = function() {
 }
 
 /**
- * @deprecated This function will be removed soon
+ * @deprecated This function will be removed soon. Use http://prebid.org/dev-docs/bidder-adaptor.html#referrers
  */
 exports.getTopFrameReferrer = function () {
   try {
@@ -229,7 +240,7 @@ exports.getTopFrameReferrer = function () {
 };
 
 /**
- * @deprecated This function will be removed soon
+ * @deprecated This function will be removed soon. Use http://prebid.org/dev-docs/bidder-adaptor.html#referrers
  */
 exports.getAncestorOrigins = function () {
   if (window.document.location && window.document.location.ancestorOrigins &&
@@ -250,6 +261,9 @@ exports.getWindowLocation = function () {
   return window.location;
 };
 
+/**
+ * @deprecated This function will be removed soon. Use http://prebid.org/dev-docs/bidder-adaptor.html#referrers
+ */
 exports.getTopWindowUrl = function () {
   let href;
   try {
@@ -260,6 +274,9 @@ exports.getTopWindowUrl = function () {
   return href;
 };
 
+/**
+ * @deprecated This function will be removed soon. Use http://prebid.org/dev-docs/bidder-adaptor.html#referrers
+ */
 exports.getTopWindowReferrer = function() {
   try {
     return window.top.document.referrer;
@@ -296,10 +313,6 @@ exports.logError = function () {
 };
 
 function decorateLog(args, prefix) {
-  if (noConsoleDecoration()) {
-    args[0] = prefix + ' ' + args[0];
-    return args;
-  }
   args = [].slice.call(args);
   prefix && args.unshift(prefix);
   args.unshift('display: inline-block; color: #fff; background: #3b88c3; padding: 1px 4px; border-radius: 3px;');
@@ -321,16 +334,6 @@ var debugTurnedOn = function () {
   }
 
   return !!config.getConfig('debug');
-};
-
-var noConsoleDecoration = function () {
-  if (config.getConfig('logDecoration') === undefined && _consoleDecorationChecked === false) {
-    const logDecoration = getParameterByName(CONSTANTS.NO_LOG_DECORATION).toUpperCase() === 'TRUE';
-    config.setConfig({ logDecoration });
-    _consoleDecorationChecked = true;
-  }
-
-  return !!config.getConfig('logDecoration');
 };
 
 exports.debugTurnedOn = debugTurnedOn;
@@ -1089,7 +1092,7 @@ export function transformBidderParamKeywords(keywords, paramName = 'keywords') {
       let values = [];
       exports._each(v, (val) => {
         val = exports.getValueString(paramName + '.' + k, val);
-        if (val) { values.push(val); }
+        if (val || val === '') { values.push(val); }
       });
       v = values;
     } else {
