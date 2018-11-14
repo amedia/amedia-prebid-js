@@ -6,6 +6,7 @@ import { parse } from './url';
 const CONSTANTS = require('./constants');
 
 var _loggingChecked = false;
+var _consoleDecorationChecked = false;
 
 var tArr = 'Array';
 var tStr = 'String';
@@ -313,6 +314,10 @@ exports.logError = function () {
 };
 
 function decorateLog(args, prefix) {
+  if (noConsoleDecoration()) {
+    args[0] = prefix + ' ' + args[0];
+    return args;
+  }
   args = [].slice.call(args);
   prefix && args.unshift(prefix);
   args.unshift('display: inline-block; color: #fff; background: #3b88c3; padding: 1px 4px; border-radius: 3px;');
@@ -334,6 +339,16 @@ var debugTurnedOn = function () {
   }
 
   return !!config.getConfig('debug');
+};
+
+var noConsoleDecoration = function () {
+  if (config.getConfig('logDecoration') === undefined && _consoleDecorationChecked === false) {
+    const logDecoration = getParameterByName(CONSTANTS.NO_LOG_DECORATION).toUpperCase() === 'TRUE';
+    config.setConfig({ logDecoration });
+    _consoleDecorationChecked = true;
+  }
+
+  return !!config.getConfig('logDecoration');
 };
 
 exports.debugTurnedOn = debugTurnedOn;

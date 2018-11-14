@@ -201,6 +201,9 @@ export function newTargeting(auctionManager) {
               utils.logMessage(`Attempting to set key value for slot: ${slot.getSlotElementId()} key: ${key} value: ${value}`);
               return value;
             }).forEach(value => {
+              if (key === 'hb_native_linkurl') {
+                value = encodeURIComponent(value);
+              }
               slot.setTargeting(key, value);
             });
           })
