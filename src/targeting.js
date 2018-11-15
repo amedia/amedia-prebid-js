@@ -204,6 +204,9 @@ export function newTargeting(auctionManager) {
               if (key === 'hb_native_linkurl') {
                 value = encodeURIComponent(value);
               }
+              if (key === 'hb_native_title' || key === 'hb_native_body') {
+                value = value.replace('!', '%21');
+              }
               slot.setTargeting(key, value);
             });
           })
