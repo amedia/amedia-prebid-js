@@ -67,6 +67,10 @@ function setRenderSize(doc, width, height) {
     doc.defaultView.frameElement.width = width;
     doc.defaultView.frameElement.height = height;
   }
+  if (doc.defaultView && doc.defaultView.frameElement && doc.defaultView.frameElement.contentWindow && doc.defaultView.frameElement.contentWindow.parent && doc.defaultView.frameElement.contentWindow.parent.frameElement) {
+    doc.defaultView.frameElement.contentWindow.parent.frameElement.width = width;
+    doc.defaultView.frameElement.contentWindow.parent.frameElement.height = height;
+  }
 }
 
 /// ///////////////////////////////

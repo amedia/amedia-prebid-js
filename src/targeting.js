@@ -78,8 +78,10 @@ export function newTargeting(auctionManager) {
     // Get targeting for the winning bid. Add targeting for any bids that have
     // `alwaysUseBid=true`. If sending all bids is enabled, add targeting for losing bids.
     var targeting = getWinningBidTargeting(adUnitCodes, bidsReceived)
-      .concat(getCustomBidTargeting(adUnitCodes, bidsReceived))
+      //.concat(getCustomBidTargeting(adUnitCodes, bidsReceived))
       .concat(config.getConfig('enableSendAllBids') ? getBidLandscapeTargeting(adUnitCodes, bidsReceived) : []);
+
+    utils.logMessage('All bids targeting', targeting);
 
     // store a reference of the targeting keys
     targeting.map(adUnitCode => {
@@ -201,10 +203,10 @@ export function newTargeting(auctionManager) {
               utils.logMessage(`Attempting to set key value for slot: ${slot.getSlotElementId()} key: ${key} value: ${value}`);
               return value;
             }).forEach(value => {
-              if (key === 'hb_native_linkurl') {
+              if (key === 'hb_native_linkurl' || key === 'hb_native_image') {
                 value = encodeURIComponent(value);
               }
-              if (key === 'hb_native_title' || key === 'hb_native_body') {
+              if ((typeof value.replace === 'function' ) && (key === 'hb_native_title' || key === 'hb_native_body')) {
                 value = value.replace('!', '%21');
               }
               slot.setTargeting(key, value);
@@ -307,7 +309,6 @@ export function newTargeting(auctionManager) {
           }, [])
       };
     });
-
     return winners;
   }
 
@@ -382,12 +383,14 @@ export function newTargeting(auctionManager) {
    * @return {targetingArray}   bids with custom targeting defined in bidderSettings
    */
   function getCustomBidTargeting(adUnitCodes, bidsReceived) {
-    return bidsReceived
+    let customBidTargeting = bidsReceived
       .filter(bid => includes(adUnitCodes, bid.adUnitCode))
       .map(bid => Object.assign({}, bid))
       .reduce(mergeAdServerTargeting, [])
       .map(truncateCustomKeys)
-      .filter(bid => bid); // removes empty elements in array;
+      .filter(bid => bid);
+    utils.logMessage('Custom bids targeting', customBidTargeting);
+    return customBidTargeting; // removes empty elements in array;
   }
 
   /**
