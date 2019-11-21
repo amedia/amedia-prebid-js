@@ -2,10 +2,11 @@
 * adploggerAnalyticsAdapter.js - analytics adapter for adplogger
 */
 
-var events = require('src/events');
-var utils = require('src/utils');
-var CONSTANTS = require('src/constants.json');
-var adaptermanager = require('src/adaptermanager');
+import events from '../src/events';
+import { logInfo, _each } from '../src/utils';
+import CONSTANTS from '../src/constants.json';
+import adapterManager from '../src/adapterManager';
+import adapter from "../src/AnalyticsAdapter";
 
 var BID_REQUESTED = CONSTANTS.EVENTS.BID_REQUESTED;
 var BID_TIMEOUT = CONSTANTS.EVENTS.BID_TIMEOUT;
@@ -15,12 +16,18 @@ var BID_WON = CONSTANTS.EVENTS.BID_WON;
 var ADP_INITIALIZED = false;
 var ADP_STORAGE = [];
 
-exports.enableAnalytics = function ({ provider, options }) {
+var exports = adapter({
+  global: 'AdpLoggerAnalytics',
+  handler: 'on',
+  analyticsType: 'bundle'
+});
+
+exports.enableAnalytics = (config) => {
   var existingEvents = events.getEvents();
 
   var bid = null;
 
-  utils._each(existingEvents, function (eventObj) {
+  _each(existingEvents, function (eventObj) {
     if (typeof eventObj !== 'object') {
       return;
     }
@@ -85,7 +92,7 @@ function sendBidWonToGa(bid) {
 }
 
 function logToAdp(event, data) {
-  utils.logMessage('Sending prebid event to adplogger [' + event + '][' + data + ']');
+  logInfo('Sending prebid event to adpLogger [' + event + '][' + data + ']');
   if (ADP_INITIALIZED) {
     window.postMessage({
       adpEventName: 'seshat-add',
@@ -121,12 +128,14 @@ window.postMessage({
 }, '*');
 
 function sendBidTimeouts(timedOutBidders) {
-  utils._each(timedOutBidders, function (bidderCode) {
+  _each(timedOutBidders, function (bidderCode) {
     logToAdp('a_prebid_timeout', [bidderCode.bidder, bidderCode.adUnitCode] );
   });
 }
 
-adaptermanager.registerAnalyticsAdapter({
+adapterManager.registerAnalyticsAdapter({
   adapter: exports,
   code: 'adplogger'
 });
+
+export default exports;
