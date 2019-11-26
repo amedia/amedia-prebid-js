@@ -4,7 +4,7 @@ import { registerBidder } from 'src/adapters/bidderFactory';
 import { VIDEO } from 'src/mediaTypes';
 
 const BIDDER_CODE = 'smartx';
-const URL = '//bid.stage.sxp.smartclip.net/bid/5';
+const URL = '//bid.sxp.smartclip.net/bid/1000';
 
 export const spec = {
   code: BIDDER_CODE,
@@ -324,7 +324,7 @@ function createOutstreamScript(bid) {
   const script = window.document.createElement('script');
   script.type = 'text/javascript';
   script.async = 'true';
-  script.src = '//dco.smartclip.net/?plc=68005';
+  script.src = '//dco.smartclip.net/?plc=7777777';
   script.onload = script.onreadystatechange = function() {
     var rs = this.readyState;
     if (rs && rs != 'complete' && rs != 'loaded') return;
