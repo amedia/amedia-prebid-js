@@ -82,6 +82,9 @@ export const spec = {
             const sizes = flatten(bidParams.sizes);
             w = sizes[0];
             h = sizes[1];
+          } else {
+            w = 300;
+            h = 300;
           }
 
           asset[props.name] = {
