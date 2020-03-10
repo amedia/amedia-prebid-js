@@ -83,8 +83,8 @@ export const spec = {
             w = sizes[0];
             h = sizes[1];
           } else {
-            w = 300;
-            h = 300;
+            w = 50;
+            h = 50;
           }
 
           asset[props.name] = {
