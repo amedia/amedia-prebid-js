@@ -4,7 +4,7 @@ import { registerBidder } from 'src/adapters/bidderFactory';
 import { VIDEO } from 'src/mediaTypes';
 
 const BIDDER_CODE = 'smartx';
-const URL = '//bid.sxp.smartclip.net/bid/1000';
+const URL = '//bid.stage.sxp.smartclip.net/bid/5';
 
 export const spec = {
   code: BIDDER_CODE,
@@ -50,6 +50,13 @@ export const spec = {
       return false;
     }
 
+    /*
+	if (!utils.getBidIdParameter('domain', bid.params)) {
+      utils.logError(BIDDER_CODE + ': domain is not present in bidder params');
+      return false;
+    }
+	*/
+
     if (utils.deepAccess(bid, 'mediaTypes.video.context') == 'outstream' || utils.deepAccess(bid, 'params.ad_unit') == 'outstream') {
       if (!utils.getBidIdParameter('outstream_function', bid.params)) {
         if (!utils.getBidIdParameter('outstream_options', bid.params)) {
@@ -76,12 +83,14 @@ export const spec = {
   buildRequests: function(bidRequests, bidderRequest) {
     const page = bidderRequest.refererInfo.referer;
     const isPageSecure = !!page.match(/^https:/)
-    const domain = page.match(/:\/\/(.[^/]+)/)[1];
+    //const domain = page.match(/:\/\/(.[^/]+)/)[1];
 
     const smartxRequests = bidRequests.map(function(bid) {
       const tagId = utils.getBidIdParameter('tagId', bid.params);
       const publisherId = utils.getBidIdParameter('publisherId', bid.params);
       const siteId = utils.getBidIdParameter('siteId', bid.params);
+      const domain = utils.getBidIdParameter('domain', bid.params);
+
       let pubcid = null;
 
       const playerSize = utils.deepAccess(bid, 'mediaTypes.video.playerSize');
@@ -105,6 +114,12 @@ export const spec = {
       const pos = utils.getBidIdParameter('pos', bid.params) || 1;
       const api = utils.getBidIdParameter('api', bid.params) || [2];
       const protocols = utils.getBidIdParameter('protocols', bid.params) || [2, 3, 5, 6];
+      //CUSTOM:placement
+      var contextcustom = utils.deepAccess(bid, 'mediaTypes.video.context');
+      var placement = 1;
+      if (contextcustom == 'outstream') {
+        placement = 3;
+      }
 
       let smartxReq = {
         id: bid.bidId,
@@ -122,6 +137,8 @@ export const spec = {
           maxbitrate: maxbitrate,
           delivery: delivery,
           pos: pos,
+          //CUSTOM:Placement
+          placement: placement,
           api: api,
           ext: ext
         },
@@ -324,7 +341,7 @@ function createOutstreamScript(bid) {
   const script = window.document.createElement('script');
   script.type = 'text/javascript';
   script.async = 'true';
-  script.src = '//dco.smartclip.net/?plc=7777777';
+  script.src = '//dco.smartclip.net/?plc=68005';
   script.onload = script.onreadystatechange = function() {
     var rs = this.readyState;
     if (rs && rs != 'complete' && rs != 'loaded') return;
