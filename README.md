@@ -157,7 +157,7 @@ Building with just these adapters will result in a smaller bundle which should a
 
         $ gulp build --modules=openxBidAdapter,rubiconBidAdapter,sovrnBidAdapter
         
-        **BYGG FOR BAZAAR** gulp build --modules=adformBidAdapter,rubiconBidAdapter,appnexusBidAdapter,improvedigitalBidAdapter,adformOpenRTBBidAdapter,smartxBidAdapter,adploggerAnalyticsAdapter,currency,consentManagement,dfpAdServerVideo
+        **BYGG FOR BAZAAR** gulp build --modules=adformBidAdapter,rubiconBidAdapter,appnexusBidAdapter,improvedigitalBidAdapter,adformOpenRTBBidAdapter,smartxBidAdapter,adploggerAnalyticsAdapter,currency,dfpAdServerVideo
         
 Alternatively, a `.json` file can be specified that contains a list of modules you would like to include.
 
