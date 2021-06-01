@@ -228,6 +228,75 @@ describe('Nobid Adapter', function () {
     });
   });
 
+  describe('buildRequestsEIDs', function () {
+    const SITE_ID = 2;
+    const REFERER = 'https://www.examplereferer.com';
+    let bidRequests = [
+      {
+        'bidder': 'nobid',
+        'params': {
+          'siteId': SITE_ID
+        },
+        'adUnitCode': 'adunit-code',
+        'sizes': [[300, 250]],
+        'bidId': '30b31c1838de1e',
+        'bidderRequestId': '22edbae2733bf6',
+        'auctionId': '1d1a030790a475',
+        'userIdAsEids': [
+          {
+            'source': 'criteo.com',
+            'uids': [
+              {
+                'id': 'CRITEO_ID',
+                'atype': 1
+              }
+            ]
+          },
+          {
+            'source': 'id5-sync.com',
+            'uids': [
+              {
+                'id': 'ID5_ID',
+                'atype': 1
+              }
+            ],
+            'ext': {
+              'linkType': 0
+            }
+          },
+          {
+            'source': 'adserver.org',
+            'uids': [
+              {
+                'id': 'TD_ID',
+                'atype': 1,
+                'ext': {
+                  'rtiPartner': 'TDID'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let bidderRequest = {
+      refererInfo: {referer: REFERER}
+    }
+
+    it('should criteo eid', function () {
+      const request = spec.buildRequests(bidRequests, bidderRequest);
+      const payload = JSON.parse(request.data);
+      expect(payload.sid).to.exist.and.to.equal(2);
+      expect(payload.eids[0].source).to.exist.and.to.equal('criteo.com');
+      expect(payload.eids[0].uids[0].id).to.exist.and.to.equal('CRITEO_ID');
+      expect(payload.eids[1].source).to.exist.and.to.equal('id5-sync.com');
+      expect(payload.eids[1].uids[0].id).to.exist.and.to.equal('ID5_ID');
+      expect(payload.eids[2].source).to.exist.and.to.equal('adserver.org');
+      expect(payload.eids[2].uids[0].id).to.exist.and.to.equal('TD_ID');
+    });
+  });
+
   describe('buildRequests', function () {
     const SITE_ID = 2;
     const REFERER = 'https://www.examplereferer.com';
@@ -526,6 +595,47 @@ describe('Nobid Adapter', function () {
       }
       let result = spec.interpretResponse({ body: response }, {bidderRequest: bidderRequest});
       expect(nobid.refreshLimit).to.equal(REFRESH_LIMIT);
+    });
+  });
+
+  describe('interpretResponseWithMeta', function () {
+    const CREATIVE_ID_300x250 = 'CREATIVE-100';
+    const ADUNIT_300x250 = 'ADUNIT-1';
+    const ADMARKUP_300x250 = 'ADMARKUP-300x250';
+    const PRICE_300x250 = 0.51;
+    const REQUEST_ID = '3db3773286ee59';
+    const DEAL_ID = 'deal123';
+    const ADOMAINS = ['adomain1', 'adomain2'];
+    let response = {
+      country: 'US',
+      ip: '68.83.15.75',
+      device: 'COMPUTER',
+      site: 2,
+      bids: [
+        {id: 1,
+          bdrid: 101,
+          divid: ADUNIT_300x250,
+          dealid: DEAL_ID,
+          creativeid: CREATIVE_ID_300x250,
+          size: {'w': 300, 'h': 250},
+          adm: ADMARKUP_300x250,
+          price: '' + PRICE_300x250,
+          meta: {
+        	  advertiserDomains: ADOMAINS
+          }
+        }
+      ]
+    };
+
+    it('should meta.advertiserDomains be respected', function () {
+      let bidderRequest = {
+        bids: [{
+          bidId: REQUEST_ID,
+          adUnitCode: ADUNIT_300x250
+        }]
+      }
+      let result = spec.interpretResponse({ body: response }, {bidderRequest: bidderRequest});
+      expect(result[0].meta.advertiserDomains).to.equal(ADOMAINS);
     });
   });
 

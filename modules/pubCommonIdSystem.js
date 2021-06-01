@@ -9,6 +9,7 @@ import * as utils from '../src/utils.js';
 import {submodule} from '../src/hook.js';
 import {getStorageManager} from '../src/storageManager.js';
 import {ajax} from '../src/ajax.js';
+import { uspDataHandler, coppaDataHandler } from '../src/adapterManager.js';
 
 const PUB_COMMON_ID = 'PublisherCommonId';
 const MODULE_NAME = 'pubCommonId';
@@ -20,8 +21,9 @@ const SHAREDID_URL = 'https://id.sharedid.org/id';
 const SHAREDID_SUFFIX = '_sharedid';
 const EXPIRED_COOKIE_DATE = 'Thu, 01 Jan 1970 00:00:01 GMT';
 const SHAREDID_DEFAULT_STATE = false;
+const GVLID = 887;
 
-const storage = getStorageManager(null, 'pubCommonId');
+const storage = getStorageManager(GVLID, 'pubCommonId');
 
 /**
  * Store sharedid in either cookie or local storage
@@ -37,7 +39,7 @@ function storeData(config, value) {
 
       if (config.storage.type === COOKIE) {
         if (storage.cookiesAreEnabled()) {
-          storage.setCookie(key, value, expiresStr, 'LAX', COOKIE_DOMAIN);
+          storage.setCookie(key, value, expiresStr, 'LAX', pubCommonIdSubmodule.domainOverride());
         }
       } else if (config.storage.type === LOCAL_STORAGE) {
         if (storage.hasLocalStorage()) {
@@ -136,6 +138,26 @@ function handleResponse(pubcid, callback, config) {
 }
 
 /**
+ * Builds and returns the shared Id URL with attached consent data if applicable
+ * @param {Object} consentData
+ * @return {string}
+ */
+function sharedIdUrl(consentData) {
+  const usPrivacyString = uspDataHandler.getConsentData();
+  let sharedIdUrl = SHAREDID_URL;
+  if (usPrivacyString && typeof usPrivacyString === 'string') {
+    sharedIdUrl = `${SHAREDID_URL}?us_privacy=${usPrivacyString}`;
+  }
+  if (!consentData || typeof consentData.gdprApplies !== 'boolean' || !consentData.gdprApplies) return sharedIdUrl;
+  if (usPrivacyString) {
+    sharedIdUrl = `${sharedIdUrl}&gdpr=1&gdpr_consent=${consentData.consentString}`
+    return sharedIdUrl;
+  }
+  sharedIdUrl = `${SHAREDID_URL}?gdpr=1&gdpr_consent=${consentData.consentString}`;
+  return sharedIdUrl
+}
+
+/**
  * Wraps pixelCallback in order to call sharedid sync
  * @param {string} pubcid Pubcommon id value
  * @param {function|undefined} pixelCallback fires a pixel to first party server
@@ -143,12 +165,12 @@ function handleResponse(pubcid, callback, config) {
  * @return {function(...[*]=)}
  */
 
-function getIdCallback(pubcid, pixelCallback, config) {
+function getIdCallback(pubcid, pixelCallback, config, consentData) {
   return function (callback) {
     if (typeof pixelCallback === 'function') {
       pixelCallback();
     }
-    ajax(SHAREDID_URL, handleResponse(pubcid, callback, config), undefined, {method: 'GET', withCredentials: true});
+    ajax(sharedIdUrl(consentData), handleResponse(pubcid, callback, config), undefined, {method: 'GET', withCredentials: true});
   }
 }
 
@@ -159,7 +181,11 @@ export const pubCommonIdSubmodule = {
    * @type {string}
    */
   name: MODULE_NAME,
-
+  /**
+   * Vendor id of prebid
+   * @type {Number}
+   */
+  gvlid: GVLID,
   /**
    * Return a callback function that calls the pixelUrl with id as a query parameter
    * @param pixelUrl
@@ -207,6 +233,11 @@ export const pubCommonIdSubmodule = {
    * @returns {IdResponse}
    */
   getId: function (config = {}, consentData, storedId) {
+    const coppa = coppaDataHandler.getCoppa();
+    if (coppa) {
+      utils.logInfo('PubCommonId: IDs not provided for coppa requests, exiting PubCommonId');
+      return;
+    }
     const {params: {create = true, pixelUrl, enableSharedId = SHAREDID_DEFAULT_STATE} = {}} = config;
     let newId = storedId;
     if (!newId) {
@@ -222,7 +253,7 @@ export const pubCommonIdSubmodule = {
     }
 
     const pixelCallback = this.makeCallback(pixelUrl, newId);
-    const combinedCallback = enableSharedId ? getIdCallback(newId, pixelCallback, config) : pixelCallback;
+    const combinedCallback = enableSharedId ? getIdCallback(newId, pixelCallback, config, consentData) : pixelCallback;
 
     return {id: newId, callback: combinedCallback};
   },
@@ -242,10 +273,16 @@ export const pubCommonIdSubmodule = {
    *
    * @function
    * @param {SubmoduleParams} [config]
+   * @param {ConsentData|undefined} consentData
    * @param {Object} storedId existing id
    * @returns {IdResponse|undefined}
    */
-  extendId: function(config = {}, storedId) {
+  extendId: function(config = {}, consentData, storedId) {
+    const coppa = coppaDataHandler.getCoppa();
+    if (coppa) {
+      utils.logInfo('PubCommonId: IDs not provided for coppa requests, exiting PubCommonId');
+      return;
+    }
     const {params: {extend = false, pixelUrl, enableSharedId = SHAREDID_DEFAULT_STATE} = {}} = config;
 
     if (extend) {
@@ -282,16 +319,19 @@ export const pubCommonIdSubmodule = {
   domainOverride: function () {
     const domainElements = document.domain.split('.');
     const cookieName = `_gd${Date.now()}`;
-    for (let i = 0, topDomain; i < domainElements.length; i++) {
+    for (let i = 0, topDomain, testCookie; i < domainElements.length; i++) {
       const nextDomain = domainElements.slice(i).join('.');
 
       // write test cookie
       storage.setCookie(cookieName, '1', undefined, undefined, nextDomain);
 
       // read test cookie to verify domain was valid
-      if (storage.getCookie(cookieName) === '1') {
-        // delete test cookie
-        storage.setCookie(cookieName, '', 'Thu, 01 Jan 1970 00:00:01 GMT', undefined, nextDomain);
+      testCookie = storage.getCookie(cookieName);
+
+      // delete test cookie
+      storage.setCookie(cookieName, '', 'Thu, 01 Jan 1970 00:00:01 GMT', undefined, nextDomain);
+
+      if (testCookie === '1') {
         // cookie was written successfully using test domain so the topDomain is updated
         topDomain = nextDomain;
       } else {
@@ -301,7 +341,5 @@ export const pubCommonIdSubmodule = {
     }
   }
 };
-
-const COOKIE_DOMAIN = pubCommonIdSubmodule.domainOverride();
 
 submodule('userId', pubCommonIdSubmodule);

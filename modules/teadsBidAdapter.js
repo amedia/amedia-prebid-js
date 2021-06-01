@@ -1,6 +1,7 @@
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 const utils = require('../src/utils.js');
 const BIDDER_CODE = 'teads';
+const GVL_ID = 132;
 const ENDPOINT_URL = 'https://a.teads.tv/hb/bid-request';
 const gdprStatus = {
   GDPR_APPLIES_PUBLISHER: 12,
@@ -11,6 +12,7 @@ const gdprStatus = {
 
 export const spec = {
   code: BIDDER_CODE,
+  gvlid: GVL_ID,
   supportedMediaTypes: ['video', 'banner'],
   /**
    * Determines whether or not the given bid request is valid.
@@ -97,6 +99,9 @@ export const spec = {
           currency: bid.currency,
           netRevenue: true,
           ttl: bid.ttl,
+          meta: {
+            advertiserDomains: bid && bid.adomain ? bid.adomain : []
+          },
           ad: bid.ad,
           requestId: bid.bidId,
           creativeId: bid.creativeId,

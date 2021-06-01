@@ -6,7 +6,7 @@ Adot Bidder Adapter is a module that enables the communication between the Prebi
 
 - Module name: Adot Bidder Adapter
 - Module type: Bidder Adapter
-- Maintainer: `maxime.lequain@we-are-adot.com`
+- Maintainer: `aurelien.giudici@adotmob.com`
 - Supported media types: `banner`, `video`, `native`
 
 ## Example ad units
@@ -213,4 +213,39 @@ const adUnit = {
         }
     }]
 }
+```
+
+### PublisherId
+
+You can set a publisherId using `pbjs.setBidderConfig` for the bidder `adot`
+
+#### Example
+
+```javascript
+pbjs.setBidderConfig({
+    bidders: ['adot'],
+    config: {
+        adot: {
+            publisherId: '__MY_PUBLISHER_ID__'
+        }
+    }
+});
+```
+
+### Specific publisher path
+
+You can set a specific publisher path using `pbjs.setBidderConfig` for the bidder `adot`
+The bidrequest will add this path to the bidder endpoint
+
+#### Example
+
+```javascript
+pbjs.setBidderConfig({
+    bidders: ['adot'],
+    config: {
+        adot: {
+            publisherPath: '__MY_PUBLISHER_PATH__'
+        }
+    }
+});
 ```
